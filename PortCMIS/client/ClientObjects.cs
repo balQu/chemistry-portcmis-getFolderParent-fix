@@ -1818,13 +1818,25 @@ namespace PortCMIS.Client.Impl
                     return null;
                 }
 
-                IList<IFolder> parents = Parents;
-                if (parents == null || parents.Count == 0)
+                var parent = Binding.GetNavigationService().GetFolderParent(RepositoryId, ObjectId, GetPropertyQueryName(PropertyIds.ObjectId), null);
+                
+                // get id property
+                IPropertyData idProperty = parent.Properties[PropertyIds.ObjectId];
+                if (idProperty == null || idProperty.PropertyType != PropertyType.Id)
                 {
-                    return null;
+                    // the repository sent an object without a valid object id...
+                    throw new CmisInvalidServerDataException("Repository sent invalid data! No object ID!");
                 }
 
-                return parents[0];
+                // fetch the object and make sure it is a folder
+                IObjectId parentId = Session.CreateObjectId(idProperty.FirstValue as string);
+                if (!(Session.GetObject(parentId) is IFolder parentFolder))
+                {
+                    // the repository sent an object that is not a folder...
+                    throw new CmisInvalidServerDataException("Repository sent invalid data! Object is not a folder!");
+                }
+
+                return parentFolder;
             }
         }
 
