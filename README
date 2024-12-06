@@ -1,91 +1,23 @@
-Apache Chemistry PortCMIS 0.4
-=============================
+This fork was created to address a bug found in the PortCMIS library.
+Unfortunately, the Apache Chemistry project has been retired and moved to the Apache Attic, which means there is no option to include my fix in the official repository (chemistry-portcmis).
 
-Apache Chemistry PortCMIS is a Content Management Interoperability Services (CMIS)
-client library for the .NET Standard 1.1 or higher.
+I hope this fork helps someone understand the issue and apply the fix in their own codebase if needed.
 
-See https://chemistry.apache.org/dotnet/portcmis.html for more information.
-See https://chemistry.apache.org/docs/cmis-samples/ for code samples.
+This would have been the description of a pull request to chemistry-portcmis:
+----
+When accessing the `FolderParent` of a Folder, the wrong CMIS service is called.
 
-If you find a problem, please let us know: https://issues.apache.org/jira/browse/CMIS
+The CMIS standard specifies that a folder must have exactly one parent, which should be retrieved using the `getFolderParent` service. However, in  PortCMIS, the `getObjectParents` service is used instead.
 
+The standard also states that a Folder object should have the **allowable action** `canGetFolderParent`, but not `canGetObjectParents`. This discrepancy results  in an error because our CMIS server correctly returns false for the `canGetObjectParents` **allowable action**.
 
-Libraries
----------
+Sample Code:
+Folder folder = (Folder)session.GetObject(*some-object-id*);
+Folder parent = (Folder)folder.FolderParent; // error: Our server returns "The allowable action canGetObjectParents is set to false"
 
-PortCMIS consists of two libraries: PortCMIS and PortCMISWin.
-
-The PortCMIS library is a .NET Standard 1.1 library and contains the main code.
-The PortCMISWin library adds support for Windows Runtime APIs, especially the
-Windows.Web.Http.HttpClient. Use it only if you need a specific feature that is
-not available with the System.Net.Http.HttpClient.
+Fix:
+In the getter function of `FolderParent` I changed the code so that the CMIS service `getFolderParent` is called.
 
 
-Use this code to create a session with PortCMIS:
-
-    IDictionary<string, string> parameters = new Dictionary<string, string>() {
-        {SessionParameter.BindingType , BindingType.Browser},
-        {SessionParameter.BrowserUrl , "http://localhost:8080/inmemory/browser"},
-        {SessionParameter.RepositoryId , "A1"},
-        {SessionParameter.User , "user"},
-        {SessionParameter.Password , "password"}
-    };
-
-    ISessionFactory factory = SessionFactory.NewInstance();
-    ISession session = factory.CreateSession(parameters);
-
-
-Use this code to create a session with PortCMISWin:
-
-    IDictionary<string, string> parameters = new Dictionary<string, string>() {
-        {SessionParameter.BindingType , BindingType.Browser},
-        {SessionParameter.BrowserUrl , "http://localhost:8080/inmemory/browser"},
-        {SessionParameter.RepositoryId , "A1"},
-        {SessionParameter.User , "user"},
-        {SessionParameter.Password , "password"}
-    };
-
-    ISessionFactory factory = WindowsSessionFactory.NewInstance();
-    ISession session = factory.CreateSession(parameters);
-
-
-Please note that the authentication provider interfaces are different for
-PortCMIS and PortCMISWin. Custom authentication provider implementations have
-to developed for either PortCMIS or PortCMISWin.
-
-
-Change log 
-----------
-
-PortCMIS 0.4:
-
-- ...
-
-
-PortCMIS 0.3:
-
-- Switched from a Portable Class Library to a .NET Standard Library
-- Bug fixes and small improvments 
-- See https://issues.apache.org/jira/secure/ReleaseNote.jspa?version=12340229&projectId=12310936
-
-
-PortCMIS 0.2:
-
-- Bug fix release
-- See https://issues.apache.org/jira/secure/ReleaseNote.jspa?projectId=12310936&version=12337841
-
-
-PortCMIS 0.1:
-
-- Initial release
-
-  
-Strong-Name signing
--------------------
-
-The DLL included in this release is signed with a public/private key pair that is also 
-included in this package. This allows you to deploy it to the global assembly cache (GAC) 
-and to make changes to the PortCMIS source code without recompiling your application.
-However, since the private key is publicly available, this strong name cannot be trusted.
-If a trust relationship between your application and the PortCMIS DLL is important to you, 
-you have to rebuild the DLL from the source code and sign it yourself.
+Note:
+_I understand that the PortCMIS project has been moved to the Apache Attic, but I believe I have found a bug in the library and would like to inquire if there is  any way to push my bug fix into the official repository._
